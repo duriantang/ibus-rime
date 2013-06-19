@@ -1,3 +1,10 @@
+ibus-rime (0.9.4-2) unstable; urgency=low
+
+  * Team upload.
+  * Fix libexecdir. Closes: #712581
+
+ -- Osamu Aoki <osamu@debian.org>  Wed, 19 Jun 2013 22:24:56 +0900
+
 ibus-rime (0.9.4-1) unstable; urgency=low
 
   * Initial release (Closes: #679389).
