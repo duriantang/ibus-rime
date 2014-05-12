@@ -6,7 +6,7 @@ Uploaders: Qijiang Fan <fqj1994@gmail.com>, Aron Xu <aron@debian.org>
 Build-Depends: debhelper (>= 9), librime-dev (>= 0.9.2), cmake (>= 2.8), pkg-config, libnotify-dev, fcitx-libs-dev, libibus-1.0-dev, librime-data
 Standards-Version: 3.9.4
 Homepage: http://code.google.com/p/rimeime
-Vcs-Git: git://anonscm.debian.org/pkg-ime/pkg-ime/ibus-rime.git
+Vcs-Git: git://anonscm.debian.org/pkg-ime/ibus-rime.git
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-ime/ibus-rime.git
 
 Package: ibus-rime
