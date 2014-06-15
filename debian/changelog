@@ -1,3 +1,9 @@
+ibus-rime (1.1-1) unstable; urgency=low
+
+  * New release.
+
+ -- Qijiang Fan <fqj1994@gmail.com>  Sun, 15 Jun 2014 12:40:33 +0800
+
 ibus-rime (0.9.4-2) unstable; urgency=low
 
   * Team upload.
