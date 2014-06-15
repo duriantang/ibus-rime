@@ -10,13 +10,14 @@
 #include <rime_api.h>
 #include "rime_engine.h"
 #include "rime_settings.h"
+#include "rime_version.h"
 
 // TODO:
 #define _(x) (x)
 
 #define DISTRIBUTION_NAME _("Rime")
 #define DISTRIBUTION_CODE_NAME "ibus-rime"
-#define DISTRIBUTION_VERSION "0.9.4"
+#define DISTRIBUTION_VERSION RIME_VERSION
 
 #define IBUS_RIME_INSTALL_PREFIX "/usr"
 #define IBUS_RIME_SHARED_DATA_DIR IBUS_RIME_INSTALL_PREFIX "/share/rime-data"
@@ -35,6 +36,32 @@ static const char* get_ibus_rime_old_user_data_dir(char *path) {
   return path;
 }
 
+
+static void show_message(const char* summary, const char* details) {
+  NotifyNotification* notice = notify_notification_new(summary, details, NULL);
+  notify_notification_show(notice, NULL);
+  g_object_unref(notice);
+}
+
+static void notification_handler(void* context_object,
+                                 RimeSessionId session_id,
+                                 const char* message_type,
+                                 const char* message_value) {
+  if (!strcmp(message_type, "deploy")) {
+    if (!strcmp(message_value, "start")) {
+      show_message(_("Rime is under maintenance ..."), NULL);
+    }
+    else if (!strcmp(message_value, "success")) {
+      show_message(_("Rime is ready."), NULL);
+    }
+    else if (!strcmp(message_value, "failure")) {
+      show_message(_("Rime has encountered an error."),
+                   _("See /tmp/rime.ibus.ERROR for details."));
+    }
+    return;
+  }
+}
+
 void ibus_rime_start(gboolean full_check) {
   char user_data_dir[512] = {0};
   char old_user_data_dir[512] = {0};
@@ -48,18 +75,15 @@ void ibus_rime_start(gboolean full_check) {
       g_mkdir_with_parents(user_data_dir, 0700);
     }
   }
-  RimeTraits ibus_rime_traits;
+  RimeSetNotificationHandler(notification_handler, NULL);
+  RIME_STRUCT(RimeTraits, ibus_rime_traits);
   ibus_rime_traits.shared_data_dir = IBUS_RIME_SHARED_DATA_DIR;
   ibus_rime_traits.user_data_dir = user_data_dir;
   ibus_rime_traits.distribution_name = DISTRIBUTION_NAME;
   ibus_rime_traits.distribution_code_name = DISTRIBUTION_CODE_NAME;
   ibus_rime_traits.distribution_version = DISTRIBUTION_VERSION;
   RimeInitialize(&ibus_rime_traits);
-  if (RimeStartMaintenance((Bool)full_check)) {
-    NotifyNotification* notice = notify_notification_new("Deploying La Rime.", NULL, NULL);
-    notify_notification_show(notice, NULL);
-    g_object_unref(notice);
-  }
+  RimeStartMaintenance((Bool)full_check);
 }
 
 static void ibus_disconnect_cb(IBusBus *bus, gpointer user_data) {
@@ -92,7 +116,7 @@ static void rime_with_ibus() {
 
   IBusFactory *factory = ibus_factory_new(ibus_bus_get_connection(bus));
   g_object_ref_sink(factory);
-  
+
   ibus_factory_add_engine(factory, "rime", IBUS_TYPE_RIME_ENGINE);
   if (!ibus_bus_request_name(bus, "com.googlecode.rimeime.Rime", 0)) {
     g_error("error requesting bus name");
@@ -110,7 +134,7 @@ static void rime_with_ibus() {
   ibus_rime_start(full_check);
 
   ibus_main();
-  
+
   RimeFinalize();
   notify_uninit();
 

@@ -11,6 +11,11 @@ ibus-engine-rime:
 	(cd build; cmake -DCMAKE_BUILD_TYPE=Release .. && make)
 	@echo ':)'
 
+ibus-engine-rime-static:
+	mkdir -p build
+	(cd build; cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=ON .. && make)
+	@echo ':)'
+
 install:
 	mkdir -p $(sharedir)/ibus/component
 	cp rime.xml $(sharedir)/ibus/component/
@@ -18,7 +23,7 @@ install:
 	cp -f build/ibus-engine-rime $(libexecdir)/ibus-rime/
 	mkdir -p $(sharedir)/ibus-rime
 	mkdir -p $(sharedir)/ibus-rime/icons
-	cp -f zhung.svg $(sharedir)/ibus-rime/icons/
+	cp -f rime.png $(sharedir)/ibus-rime/icons/
 
 uninstall:
 	rm $(sharedir)/ibus/component/rime.xml
