@@ -3,6 +3,9 @@
 #include "rime_engine.h"
 #include "rime_settings.h"
 
+// TODO:
+#define _(x) (x)
+
 typedef struct _IBusRimeEngine IBusRimeEngine;
 typedef struct _IBusRimeEngineClass IBusRimeEngineClass;
 
@@ -64,7 +67,7 @@ ibus_rime_engine_class_init (IBusRimeEngineClass *klass)
 {
   IBusObjectClass *ibus_object_class = IBUS_OBJECT_CLASS (klass);
   IBusEngineClass *engine_class = IBUS_ENGINE_CLASS (klass);
-        
+
   ibus_object_class->destroy = (IBusObjectDestroyFunc) ibus_rime_engine_destroy;
 
   engine_class->process_key_event = ibus_rime_engine_process_key_event;
@@ -111,8 +114,20 @@ ibus_rime_engine_init (IBusRimeEngine *rime)
                            NULL);
   ibus_prop_list_append(rime->props, prop);
   text = ibus_text_new_from_static_string("⟲");
-  tips = ibus_text_new_from_static_string("Deploy");
+  tips = ibus_text_new_from_static_string(_("Deploy"));
   prop = ibus_property_new("deploy",
+                           PROP_TYPE_NORMAL,
+                           text,
+                           NULL,
+                           tips,
+                           TRUE,
+                           TRUE,
+                           PROP_STATE_UNCHECKED,
+                           NULL);
+  ibus_prop_list_append(rime->props, prop);
+  text = ibus_text_new_from_static_string("⇅");
+  tips = ibus_text_new_from_static_string(_("Sync data"));
+  prop = ibus_property_new("sync",
                            PROP_TYPE_NORMAL,
                            text,
                            NULL,
@@ -182,51 +197,60 @@ ibus_rime_engine_disable (IBusEngine *engine)
   }
 }
 
-static void ibus_rime_engine_update(IBusRimeEngine *rime)
+static void ibus_rime_update_status(IBusRimeEngine *rime,
+                                    RimeStatus *status)
 {
-  // update properties
-  
-  gboolean is_disabled = TRUE;
-  gboolean is_ascii_mode = FALSE;
-
-  RimeStatus status = {0};
-  RIME_STRUCT_INIT(RimeStatus, status);
-  if (RimeGetStatus(rime->session_id, &status)) {
-    is_disabled = status.is_disabled;
-    is_ascii_mode = status.is_ascii_mode;
-    RimeFreeStatus(&status);
-  }
-  
   IBusProperty* prop = ibus_prop_list_get(rime->props, 0);
   if (prop) {
     IBusText* text;
-    if (is_disabled) {
+    if (!status || status->is_disabled) {
       text = ibus_text_new_from_static_string("⌛");
     }
-    else if (is_ascii_mode) {
+    else if (status->is_ascii_mode) {
       text = ibus_text_new_from_static_string("A");
     }
     else {
-      text = ibus_text_new_from_static_string("中");
+      /* schema_name is ".default" in switcher */
+      if (status->schema_name &&
+          status->schema_name[0] != '.') {
+        text = ibus_text_new_from_string(status->schema_name);
+      }
+      else {
+        text = ibus_text_new_from_static_string("中");
+      }
     }
     ibus_property_set_label(prop, text);
     ibus_engine_update_property((IBusEngine *)rime, prop);
   }
 
+}
+
+static void ibus_rime_engine_update(IBusRimeEngine *rime)
+{
+  // update properties
+
+  RIME_STRUCT(RimeStatus, status);
+  if (RimeGetStatus(rime->session_id, &status)) {
+    ibus_rime_update_status(rime, &status);
+    RimeFreeStatus(&status);
+  }
+  else {
+    ibus_rime_update_status(rime, NULL);
+  }
+
   // commit text
-  
-  RimeCommit commit = {0};
+
+  RIME_STRUCT(RimeCommit, commit);
   if (RimeGetCommit(rime->session_id, &commit)) {
     IBusText *text;
     text = ibus_text_new_from_string(commit.text);
     ibus_engine_commit_text((IBusEngine *)rime, text);  // the text object will be released by ibus
     RimeFreeCommit(&commit);
   }
-  
+
   // begin updating UI
 
-  RimeContext context = {0};
-  RIME_STRUCT_INIT(RimeContext, context);
+  RIME_STRUCT(RimeContext, context);
   if (!RimeGetContext(rime->session_id, &context) ||
       context.composition.length == 0) {
     ibus_engine_hide_preedit_text((IBusEngine *)rime);
@@ -296,7 +320,7 @@ static void ibus_rime_engine_update(IBusRimeEngine *rime)
   ibus_lookup_table_clear(rime->table);
   if (context.menu.num_candidates) {
     int i;
-    int num_select_keys = strlen(context.menu.select_keys);
+    int num_select_keys = context.menu.select_keys ? strlen(context.menu.select_keys) : 0;
     for (i = 0; i < context.menu.num_candidates; ++i) {
       gchar* text = context.menu.candidates[i].text;
       gchar* comment = context.menu.candidates[i].comment;
@@ -326,6 +350,7 @@ static void ibus_rime_engine_update(IBusRimeEngine *rime)
       ibus_lookup_table_set_label(rime->table, i, label);
     }
     ibus_lookup_table_set_cursor_pos(rime->table, context.menu.highlighted_candidate_index);
+    ibus_lookup_table_set_orientation(rime->table, g_ibus_rime_settings.lookup_table_orientation);
     ibus_engine_update_lookup_table((IBusEngine *)rime, rime->table, TRUE);
   }
   else {
@@ -333,11 +358,11 @@ static void ibus_rime_engine_update(IBusRimeEngine *rime)
   }
 
   // end updating UI
-  
+
   RimeFreeContext(&context);
 }
 
-static gboolean 
+static gboolean
 ibus_rime_engine_process_key_event (IBusEngine *engine,
                                     guint       keyval,
                                     guint       keycode,
@@ -345,7 +370,8 @@ ibus_rime_engine_process_key_event (IBusEngine *engine,
 {
   IBusRimeEngine *rime = (IBusRimeEngine *)engine;
 
-  modifiers &= (IBUS_RELEASE_MASK | IBUS_CONTROL_MASK | IBUS_MOD1_MASK);
+  modifiers &= (IBUS_RELEASE_MASK | IBUS_LOCK_MASK | IBUS_SHIFT_MASK |
+                IBUS_CONTROL_MASK | IBUS_MOD1_MASK | IBUS_SUPER_MASK);
 
   if (!RimeFindSession(rime->session_id)) {
     //rime->session_id = RimeCreateSession();
@@ -368,6 +394,17 @@ static void ibus_rime_engine_property_activate (IBusEngine *engine,
   if (!strcmp("deploy", prop_name)) {
     RimeFinalize();
     ibus_rime_start(TRUE);
+    ibus_rime_engine_update((IBusRimeEngine *)engine);
+  }
+  else if (!strcmp("sync", prop_name)) {
+    // in the case a maintenance thread has already been started
+    // by RimeStartMaintenance(); the following call to RimeSyncUserData
+    // will queue data synching tasks for execution in the working
+    // maintenance thread, and will return False.
+    // however, there is still chance that the working maintenance thread
+    // happens to be quitting when new tasks are added, thus leaving newly
+    // added tasks undone...
+    RimeSyncUserData();
     ibus_rime_engine_update((IBusRimeEngine *)engine);
   }
 }
