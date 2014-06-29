@@ -12,7 +12,7 @@ Build-Depends: debhelper (>= 9),
                fcitx-libs-dev,
                libibus-1.0-dev,
                librime-data
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 Homepage: http://code.google.com/p/rimeime
 Vcs-Git: git://anonscm.debian.org/pkg-ime/ibus-rime.git
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-ime/ibus-rime.git

@@ -1,6 +1,10 @@
 ibus-rime (1.1-1) unstable; urgency=low
 
+  [ Qijiang Fan ]
   * New release.
+
+  [ Guo Yixuan (郭溢譞) ]
+  * Updated Standards-Version to 3.9.5, no changes needed.
 
  -- Qijiang Fan <fqj1994@gmail.com>  Sun, 15 Jun 2014 12:40:33 +0800
 
