@@ -5,6 +5,7 @@ ibus-rime (1.1-1) unstable; urgency=low
 
   [ Guo Yixuan (郭溢譞) ]
   * Updated Standards-Version to 3.9.5, no changes needed.
+  * Build-dep on librime-dev >= 1.0 (reverted the renaming).
 
  -- Qijiang Fan <fqj1994@gmail.com>  Sun, 15 Jun 2014 12:40:33 +0800
 

@@ -5,7 +5,7 @@ Maintainer: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
 Uploaders: Qijiang Fan <fqj1994@gmail.com>,
            Aron Xu <aron@debian.org>
 Build-Depends: debhelper (>= 9),
-               librime1-dev (>= 1.1),
+               librime-dev (>= 1.0),
                cmake (>= 2.8),
                pkg-config,
                libnotify-dev,
