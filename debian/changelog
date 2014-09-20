@@ -1,3 +1,10 @@
+ibus-rime (1.2-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream release.
+
+ -- Aron Xu <aron@debian.org>  Sat, 20 Sep 2014 21:10:13 +0800
+
 ibus-rime (1.1-1) unstable; urgency=low
 
   [ Qijiang Fan ]
