@@ -1,12 +1,14 @@
 ibus-rime (1.2-2) unstable; urgency=medium
 
-  * Updated Homepage.
-  * Updated Maintainer.
+  * Update Priority to optional.
+  * Updated Maintainer to
+    Debian Input Method Team <debian-input-method@lists.debian.org>.
+  * Add Hui Tang <duriantang@gmail.com> to Uploaders.
   * Updated Standards-Version to 4.1.5.
-  * Updated Uploaders.
-  * Updated Vcs-Browser.
-  * Updated Vcs-Git.
-  * Updated debian/watch.
+  * Updated Homepage to https://rime.im.
+  * Updated Vcs-Git to https://salsa.debian.org/input-method-team/ibus-rime.git.
+  * Updated Vcs-Browser to https://salsa.debian.org/input-method-team/ibus-rime.
+  * Updated debian/watch use new github source.
 
  -- Hui Tang <duriantang@gmail.com>  Sun, 8 Jul 2018 15:42:42 +0800
 
