@@ -1,7 +1,7 @@
 Source: ibus-rime
 Section: libs
-Priority: extra
-Maintainer: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
+Priority: optional
+Maintainer: Hui Tang <duriantang@gmail.com>
 Uploaders: Qijiang Fan <fqj1994@gmail.com>,
            Aron Xu <aron@debian.org>
 Build-Depends: debhelper (>= 9),
@@ -12,10 +12,10 @@ Build-Depends: debhelper (>= 9),
                fcitx-libs-dev,
                libibus-1.0-dev,
                librime-data
-Standards-Version: 3.9.5
-Homepage: http://code.google.com/p/rimeime
-Vcs-Git: git://anonscm.debian.org/pkg-ime/ibus-rime.git
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-ime/ibus-rime.git
+Standards-Version: 4.1.5
+Homepage: https://rime.im
+Vcs-Git: https://github.com/rime/ibus-rime.git
+Vcs-Browser: https://github.com/rime/ibus-rime
 
 Package: ibus-rime
 Architecture: any

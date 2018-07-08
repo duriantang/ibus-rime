@@ -1,3 +1,12 @@
+ibus-rime (1.2-2) unstable; urgency=medium
+
+  * Updated Homepage
+  * Updated Vcs-Git
+  * Updated Vcs-Browser
+  * Updated Standards-Version to 4.1.5
+
+ -- Hui Tang <duriantang@gmail.com>  Sun, 8 Jul 2018 15:42:42 +0800
+
 ibus-rime (1.2-1) unstable; urgency=medium
 
   * Team upload.
