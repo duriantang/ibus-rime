@@ -3,9 +3,11 @@
 #include "rime_config.h"
 #include <stdlib.h>
 #include <string.h>
+#include <dlfcn.h>
 #include <signal.h>
 #include <glib.h>
 #include <glib-object.h>
+#include <glib/gstdio.h>
 #include <ibus.h>
 #include <libnotify/notify.h>
 #include <rime_api.h>
@@ -50,6 +52,7 @@ static void notification_handler(void* context_object,
     }
     else if (!strcmp(message_value, "success")) {
       show_message(_("Rime is ready."), NULL);
+      ibus_rime_load_settings();
     }
     else if (!strcmp(message_value, "failure")) {
       show_message(_("Rime has encountered an error."),
@@ -79,8 +82,20 @@ void ibus_rime_start(gboolean full_check) {
   ibus_rime_traits.distribution_name = DISTRIBUTION_NAME;
   ibus_rime_traits.distribution_code_name = DISTRIBUTION_CODE_NAME;
   ibus_rime_traits.distribution_version = DISTRIBUTION_VERSION;
+  static RIME_MODULE_LIST(ibus_rime_modules, "default", "legacy");
+  ibus_rime_traits.modules = ibus_rime_modules;
   RimeInitialize(&ibus_rime_traits);
   RimeStartMaintenance((Bool)full_check);
+}
+
+static void* legacy_module_handle = NULL;
+
+static void load_plugin_modules() {
+  legacy_module_handle = dlopen("librime-legacy.so", RTLD_LAZY);
+}
+
+static void unload_plugin_modules() {
+  dlclose(legacy_module_handle);
 }
 
 static void ibus_disconnect_cb(IBusBus *bus, gpointer user_data) {
@@ -100,17 +115,6 @@ static void rime_with_ibus() {
 
   g_signal_connect(bus, "disconnected", G_CALLBACK(ibus_disconnect_cb), NULL);
 
-  IBusConfig *config = ibus_bus_get_config(bus);
-  if (!config) {
-    g_warning("ibus config not accessible");
-  }
-  else {
-    g_object_ref_sink(config);
-    ibus_rime_load_settings(config);
-    g_signal_connect(config, "value-changed",
-                     G_CALLBACK(ibus_rime_config_value_changed_cb), NULL);
-  }
-
   IBusFactory *factory = ibus_factory_new(ibus_bus_get_connection(bus));
   g_object_ref_sink(factory);
 
@@ -125,19 +129,19 @@ static void rime_with_ibus() {
     exit(1);
   }
 
+  load_plugin_modules();
   RimeSetupLogging("rime.ibus");
 
   gboolean full_check = FALSE;
   ibus_rime_start(full_check);
+  ibus_rime_load_settings();
 
   ibus_main();
 
   RimeFinalize();
+  unload_plugin_modules();
   notify_uninit();
 
-  if (config) {
-    g_object_unref(config);
-  }
   g_object_unref(factory);
   g_object_unref(bus);
 }

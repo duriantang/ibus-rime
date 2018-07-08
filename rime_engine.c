@@ -79,6 +79,9 @@ ibus_rime_engine_class_init (IBusRimeEngineClass *klass)
   engine_class->enable = ibus_rime_engine_enable;
   engine_class->disable = ibus_rime_engine_disable;
   engine_class->property_activate = ibus_rime_engine_property_activate;
+  engine_class->candidate_clicked = ibus_rime_engine_candidate_clicked;
+  engine_class->page_up = ibus_rime_engine_page_up;
+  engine_class->page_down = ibus_rime_engine_page_down;
 }
 
 static void
@@ -108,7 +111,7 @@ ibus_rime_engine_init (IBusRimeEngine *rime)
   IBusText* tips;
   label = ibus_text_new_from_static_string("中文");
   tips = ibus_text_new_from_static_string("中 ↔ A");
-  prop = ibus_property_new("mode.chinese",
+  prop = ibus_property_new("InputMode",
                            PROP_TYPE_NORMAL,
                            label,
                            IBUS_RIME_ICONS_DIR "/zh.png",
@@ -251,6 +254,11 @@ static void ibus_rime_update_status(IBusRimeEngine *rime,
         label = ibus_text_new_from_static_string("中文");
       }
     }
+    if (status && !status->is_disabled && ibus_text_get_length(label) > 0) {
+      gunichar c = g_utf8_get_char(ibus_text_get_text(label));
+      IBusText* symbol = ibus_text_new_from_unichar(c);
+      ibus_property_set_symbol(prop, symbol);
+    }
     ibus_property_set_icon(prop, icon);
     ibus_property_set_label(prop, label);
     ibus_engine_update_property((IBusEngine *)rime, prop);
@@ -353,6 +361,16 @@ static void ibus_rime_engine_update(IBusRimeEngine *rime)
   if (context.menu.num_candidates) {
     int i;
     int num_select_keys = context.menu.select_keys ? strlen(context.menu.select_keys) : 0;
+    gboolean has_labels = RIME_STRUCT_HAS_MEMBER(context, context.select_labels) && context.select_labels;
+    gboolean has_page_down = !context.menu.is_last_page;
+    gboolean has_page_up = context.menu.is_last_page && context.menu.page_no > 0;
+    ibus_lookup_table_set_round(rime->table, !(context.menu.is_last_page || context.menu.page_no == 0)); //show page up for middle page
+    ibus_lookup_table_set_page_size(rime->table, context.menu.page_size);
+    if (has_page_up) { //show page up for last page
+      for (i = 0; i < context.menu.page_size; ++i) {
+        ibus_lookup_table_append_candidate(rime->table, ibus_text_new_from_string(""));
+      }
+    }
     for (i = 0; i < context.menu.num_candidates; ++i) {
       gchar* text = context.menu.candidates[i].text;
       gchar* comment = context.menu.candidates[i].comment;
@@ -373,7 +391,10 @@ static void ibus_rime_engine_update(IBusRimeEngine *rime)
       }
       ibus_lookup_table_append_candidate(rime->table, cand_text);
       IBusText *label = NULL;
-      if (i < num_select_keys) {
+      if (i < context.menu.page_size && has_labels) {
+        label = ibus_text_new_from_string(context.select_labels[i]);
+      }
+      else if (i < num_select_keys) {
         label = ibus_text_new_from_unichar(context.menu.select_keys[i]);
       }
       else {
@@ -381,7 +402,15 @@ static void ibus_rime_engine_update(IBusRimeEngine *rime)
       }
       ibus_lookup_table_set_label(rime->table, i, label);
     }
-    ibus_lookup_table_set_cursor_pos(rime->table, context.menu.highlighted_candidate_index);
+    if (has_page_down) { //show page down except last page
+      ibus_lookup_table_append_candidate(rime->table, ibus_text_new_from_string(""));
+    }
+    if (has_page_up) { //show page up for last page
+      ibus_lookup_table_set_cursor_pos(rime->table, context.menu.page_size + context.menu.highlighted_candidate_index);
+    }
+    else {
+      ibus_lookup_table_set_cursor_pos(rime->table, context.menu.highlighted_candidate_index);
+    }
     ibus_lookup_table_set_orientation(rime->table, g_ibus_rime_settings.lookup_table_orientation);
     ibus_engine_update_lookup_table((IBusEngine *)rime, rime->table, TRUE);
   }
@@ -439,5 +468,43 @@ static void ibus_rime_engine_property_activate (IBusEngine *engine,
     RimeSyncUserData();
     ibus_rime_engine_update((IBusRimeEngine *)engine);
   }
+  else if (!strcmp("InputMode", prop_name)) {
+    IBusRimeEngine *rime = (IBusRimeEngine *)engine;
+    RimeSetOption(rime->session_id, "ascii_mode", !RimeGetOption(rime->session_id, "ascii_mode"));
+    ibus_rime_engine_update(rime);
+  }
 }
 
+static void ibus_rime_engine_candidate_clicked (IBusEngine *engine,
+                                                guint index,
+                                                guint button,
+                                                guint state)
+{
+  IBusRimeEngine *rime = (IBusRimeEngine *)engine;
+  RimeApi * additionalApis = rime_get_api();
+  if (RIME_API_AVAILABLE(additionalApis, select_candidate)) {
+    RIME_STRUCT(RimeContext, context);
+    if (!RimeGetContext(rime->session_id, &context) ||
+      context.composition.length == 0) {
+      RimeFreeContext(&context);
+      return;
+    }
+    additionalApis->select_candidate(rime->session_id, context.menu.page_no * context.menu.page_size + index);
+    RimeFreeContext(&context);
+    ibus_rime_engine_update(rime);
+  }
+}
+
+static void ibus_rime_engine_page_up (IBusEngine *engine)
+{
+    IBusRimeEngine *rime = (IBusRimeEngine *)engine;
+    RimeProcessKey(rime->session_id, IBUS_KEY_Page_Up, 0);
+    ibus_rime_engine_update(rime);
+}
+
+static void ibus_rime_engine_page_down (IBusEngine *engine)
+{
+    IBusRimeEngine *rime = (IBusRimeEngine *)engine;
+    RimeProcessKey(rime->session_id, IBUS_KEY_Page_Down, 0);
+    ibus_rime_engine_update(rime);
+}

@@ -24,19 +24,23 @@ if(Rime_FOUND)
 endif(Rime_FOUND)
 
 if(NOT DEFINED RIME_DATA_DIR)
-  find_package(Brise REQUIRED)
-  set(RIME_DATA_DIR ${BRISE_DIR})
+  find_package(RimeData REQUIRED)
 endif(NOT DEFINED RIME_DATA_DIR)
 message(STATUS "Precompiler macro RIME_DATA_DIR is set to \"${RIME_DATA_DIR}\"")
 add_definitions(-DRIME_DATA_DIR="${RIME_DATA_DIR}")
 
-set(RIME_DEPS "")
+set(RIME_DEPS "dl")
 
 if(BUILD_STATIC)
+  find_package(ICU REQUIRED uc)
+  if(ICU_FOUND)
+    set(RIME_DEPS ${RIME_DEPS} ${ICU_LIBRARIES})
+  endif()
+
   link_directories(${PROJECT_SOURCE_DIR}/lib)
-  set(RIME_DEPS ${RIME_DEPS} m stdc++ pthread z
-      libboost_filesystem.a libboost_regex.a libboost_signals.a libboost_system.a libboost_thread.a
-      libglog.a libkyotocabinet.a libopencc.a libyaml-cpp.a)
+  set(RIME_DEPS ${RIME_DEPS} m stdc++ pthread
+      libboost_filesystem.a libboost_locale.a libboost_regex.a libboost_signals.a libboost_system.a libboost_thread.a
+      libglog.a libleveldb.a libmarisa.a libopencc.a libyaml-cpp.a)
 endif(BUILD_STATIC)
 
 aux_source_directory(. IBUS_RIME_SRC)
