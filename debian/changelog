@@ -1,9 +1,12 @@
 ibus-rime (1.2-2) unstable; urgency=medium
 
-  * Updated Homepage
-  * Updated Vcs-Git
-  * Updated Vcs-Browser
-  * Updated Standards-Version to 4.1.5
+  * Updated Homepage.
+  * Updated Maintainer.
+  * Updated Standards-Version to 4.1.5.
+  * Updated Uploaders.
+  * Updated Vcs-Browser.
+  * Updated Vcs-Git.
+  * Updated debian/watch.
 
  -- Hui Tang <duriantang@gmail.com>  Sun, 8 Jul 2018 15:42:42 +0800
 
