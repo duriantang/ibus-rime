@@ -1,3 +1,10 @@
+ibus-rime (1.3.0-1) unstable; urgency=medium
+
+  * New upstream release 1.2 to 1.3.0.
+  * Updated debian/docs use README.md
+
+ -- Hui Tang <duriantang@gmail.com>  Sun, 8 Jul 2018 18:49:42 +0800
+
 ibus-rime (1.2-2) unstable; urgency=medium
 
   * Update Priority to optional.
